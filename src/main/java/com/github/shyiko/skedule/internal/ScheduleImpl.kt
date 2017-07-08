@@ -317,6 +317,7 @@ internal object ScheduleImpl {
             } else {
                 cursor = cursor.plusDays(1)
             }
+            var i = 0;
             do {
                 val prev = cursor
                 if (months != MONTH_ALL) {
@@ -348,6 +349,11 @@ internal object ScheduleImpl {
                     } else {
                         cursor = cursor.plusWeeks((nextOrSameWeek - cursor.week).toLong())
                     }
+                }
+                if (i++ > 10) {
+                    throw AssertionError("Timestamp should have converged by now. " +
+                        "Please create a ticket at https://github.com/shyiko/skedule/issue " +
+                        "(schedule expression: \"$this\")")
                 }
             } while (prev != cursor)
             return cursor
