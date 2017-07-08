@@ -317,7 +317,7 @@ internal object ScheduleImpl {
             } else {
                 cursor = cursor.plusDays(1)
             }
-            var i = 0;
+            var i = 0
             do {
                 val prev = cursor
                 if (months != MONTH_ALL) {
