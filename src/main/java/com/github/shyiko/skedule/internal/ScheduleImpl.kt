@@ -242,21 +242,30 @@ internal object ScheduleImpl {
 
         override fun next(timestamp: ZonedDateTime): ZonedDateTime {
             val stepInSeconds = Duration.of(interval.length, interval.unit).toMillis() / 1000
-            var cursor = timestamp.plusSeconds(stepInSeconds)
+            var cursor = timestamp
             val intervalTime = interval.time
             if (intervalTime != null) {
                 cursor = cursor.truncatedTo(ChronoUnit.MINUTES)
-                if (intervalTime.end < cursor.toLocalTime()) {
-                    cursor = cursor.withTime(intervalTime.start).plusDays(1)
+                val cursorTime = cursor.toLocalTime()
+                val overflow = (cursorTime.toSecondOfDay() - intervalTime.start.toSecondOfDay()) % stepInSeconds
+                cursor = when {
+                    cursorTime < intervalTime.start ->
+                        cursor.withTime(intervalTime.start)
+                    cursorTime.plusSeconds(stepInSeconds - overflow) > intervalTime.end ->
+                        cursor.withTime(intervalTime.start).plusDays(1)
+                    else -> {
+                        var result = cursor
+                        if (overflow != 0L) {
+                            val time = cursor.minusSeconds(overflow).toLocalTime()
+                            result = cursor.withTime(
+                                if (time.isAfter(intervalTime.start)) time else intervalTime.start
+                            )
+                        }
+                        result.plusSeconds(stepInSeconds)
+                    }
                 }
-                if (cursor.toLocalTime() < intervalTime.start) {
-                    cursor = cursor.withTime(intervalTime.start)
-                }
-                val overflow = cursor.toEpochSecond() % stepInSeconds
-                if (overflow != 0L) {
-                    val time = cursor.minusSeconds(overflow).toLocalTime()
-                    cursor = cursor.withTime(if (time.isAfter(intervalTime.start)) time else intervalTime.start)
-                }
+            } else {
+                cursor = cursor.plusSeconds(stepInSeconds)
             }
             return cursor
         }
