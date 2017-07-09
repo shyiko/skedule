@@ -34,7 +34,8 @@ internal object ScheduleImpl {
 
     // "every" N ("hours"|"mins"|"minutes") ["from" (time) "to" (time)]
     private val TIME = "\\d\\d:\\d\\d"
-    private val EVERY = Regex("every (\\d+) (\\w+)( from ($TIME) to ($TIME)| synchronized)?")
+    private val EVERY_PREFIX = "every "
+    private val EVERY = Regex("$EVERY_PREFIX(\\d+) (\\w+)( from ($TIME) to ($TIME)| synchronized)?")
 
     // ("every"|ordinal) (days) ["of" (monthspec)] (time)
     private val ORDINAL0 = "\\d\\d?(?:st|nd|rd|th)?|[a-z]+"
@@ -107,7 +108,8 @@ internal object ScheduleImpl {
                 val (rawTime) = match.groupValues.tail()
                 TimeSchedule(time = parseTime(rawTime))
             }
-            schedule.startsWith("every ") && schedule.length > "every ".length && schedule["every ".length].isDigit() -> {
+            schedule.startsWith(EVERY_PREFIX) && schedule.length > EVERY_PREFIX.length &&
+                schedule[EVERY_PREFIX.length].isDigit() -> {
                 val match = EVERY.matchEntire(schedule) ?:
                     throw InvalidScheduleException("\"$schedule\" isn't valid \"every ...\" expression")
                 val (rawLength, rawUnit, interval, start, end) = match.groupValues.tail()
@@ -240,7 +242,7 @@ internal object ScheduleImpl {
 
         override fun next(timestamp: ZonedDateTime): ZonedDateTime {
             val stepInSeconds = Duration.of(interval.length, interval.unit).toMillis() / 1000
-            var cursor = timestamp
+            var cursor = timestamp.plusSeconds(stepInSeconds)
             val intervalTime = interval.time
             if (intervalTime != null) {
                 cursor = cursor.truncatedTo(ChronoUnit.MINUTES)
@@ -256,7 +258,6 @@ internal object ScheduleImpl {
                     cursor = cursor.withTime(if (time.isAfter(intervalTime.start)) time else intervalTime.start)
                 }
             }
-            cursor = cursor.plusSeconds(stepInSeconds)
             return cursor
         }
 
