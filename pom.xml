@@ -6,7 +6,7 @@
 
     <groupId>com.github.shyiko.skedule</groupId>
     <artifactId>skedule</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.0.0-SNAPSHOT</version>
 
     <name>skedule</name>
     <description>A human-friendly alternative to cron</description>
