@@ -23,11 +23,10 @@ import java.util.stream.IntStream;
 // (kotlin 1.1 does NOT support static methods on interfaces - hence a separate .java interface definition)
 public interface Schedule extends Serializable {
 
-    // method below is always overridden to avoid needless iterator construction,
-    // the only reason it has default implementation is to make stubbing easier (for testing)
+    default ZonedDateTime nextOrSame(ZonedDateTime timestamp) { return iterate(timestamp).nextOrSame(); }
     default ZonedDateTime next(ZonedDateTime timestamp) { return iterate(timestamp).next(); }
 
-    Iterator<ZonedDateTime> iterate(ZonedDateTime timestamp);
+    ScheduleIterator<ZonedDateTime> iterate(ZonedDateTime timestamp);
 
     /**
      * @param schedule schedule-as-a-string (e.g. "every monday 12:00")
@@ -61,6 +60,10 @@ public interface Schedule extends Serializable {
     static Schedule every(long length, ChronoUnit unit, boolean sync) { return ScheduleImpl.every(length, unit, sync); }
 
     static AtScheduleBuilder at(LocalTime time) { return ScheduleImpl.at(time); }
+
+    interface ScheduleIterator<T> extends Iterator<T> {
+        T nextOrSame();
+    }
 
     interface FromScheduleBuilder {
         /**

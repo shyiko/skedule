@@ -197,9 +197,14 @@ internal object ScheduleImpl {
 
         abstract val lazyString: Lazy<String>
 
-        override fun iterate(timestamp: ZonedDateTime): Iterator<ZonedDateTime> {
+        override fun iterate(timestamp: ZonedDateTime): Schedule.ScheduleIterator<ZonedDateTime> {
             var cursor = timestamp
-            return generateSequence { cursor = next(cursor); cursor }.iterator()
+            return object : Schedule.ScheduleIterator<ZonedDateTime> {
+                override fun hasNext(): Boolean = true
+                override fun nextOrSame(): ZonedDateTime { cursor = nextOrSame(cursor); return cursor }
+                override fun next(): ZonedDateTime { cursor = next(cursor); return cursor }
+                override fun remove() = throw UnsupportedOperationException()
+            }
         }
 
         override fun equals(other: Any?): Boolean = this === other ||
@@ -240,32 +245,35 @@ internal object ScheduleImpl {
                 else " from ${intervalTime.start.format(TIME_FORMAT)} to ${intervalTime.end.format(TIME_FORMAT)}")
         })
 
-        override fun next(timestamp: ZonedDateTime): ZonedDateTime {
+        override fun nextOrSame(timestamp: ZonedDateTime): ZonedDateTime = roll(timestamp, false)
+        override fun next(timestamp: ZonedDateTime): ZonedDateTime = roll(timestamp)
+
+        fun roll(timestamp: ZonedDateTime, force: Boolean = true): ZonedDateTime {
             val stepInSeconds = Duration.of(interval.length, interval.unit).toMillis() / 1000
             var cursor = timestamp
             val intervalTime = interval.time
             if (intervalTime != null) {
-                cursor = cursor.truncatedTo(ChronoUnit.MINUTES)
                 val cursorTime = cursor.toLocalTime()
                 val overflow = (cursorTime.toSecondOfDay() - intervalTime.start.toSecondOfDay()) % stepInSeconds
-                cursor = when {
-                    cursorTime < intervalTime.start ->
-                        cursor.withTime(intervalTime.start)
-                    cursorTime.plusSeconds(stepInSeconds - overflow) > intervalTime.end ->
-                        cursor.withTime(intervalTime.start).plusDays(1)
-                    else -> {
-                        var result = cursor
-                        if (overflow != 0L) {
-                            val time = cursor.minusSeconds(overflow).toLocalTime()
-                            result = cursor.withTime(
-                                if (time.isAfter(intervalTime.start)) time else intervalTime.start
-                            )
-                        }
-                        result.plusSeconds(stepInSeconds)
+                if (cursorTime < intervalTime.start) {
+                    cursor = cursor.withTime(intervalTime.start)
+                } else
+                if (cursorTime.plusSeconds(stepInSeconds - overflow) > intervalTime.end) {
+                    cursor = cursor.withTime(intervalTime.start).plusDays(1)
+                } else {
+                    if (overflow != 0L) {
+                        val time = cursor.minusSeconds(overflow).toLocalTime()
+                        cursor = cursor.withTime(if (time.isAfter(intervalTime.start)) time else intervalTime.start)
+                    }
+                    if (overflow != 0L || force) {
+                        cursor = cursor.plusSeconds(stepInSeconds)
                     }
                 }
+                cursor = cursor.truncatedTo(ChronoUnit.MINUTES)
             } else {
-                cursor = cursor.plusSeconds(stepInSeconds)
+                if (force) {
+                    cursor = cursor.plusSeconds(stepInSeconds)
+                }
             }
             return cursor
         }
@@ -317,7 +325,10 @@ internal object ScheduleImpl {
         private val ZonedDateTime.week: Int
             get() = (this.dayOfMonth + 6) / 7
 
-        override fun next(timestamp: ZonedDateTime): ZonedDateTime {
+        override fun nextOrSame(timestamp: ZonedDateTime): ZonedDateTime = roll(timestamp, false)
+        override fun next(timestamp: ZonedDateTime): ZonedDateTime = roll(timestamp)
+
+        fun roll(timestamp: ZonedDateTime, force: Boolean = true): ZonedDateTime {
             var cursor = timestamp.truncatedTo(ChronoUnit.MINUTES)
             if (cursor.toLocalTime() != time) {
                 if (time < cursor.toLocalTime()) {
@@ -325,7 +336,9 @@ internal object ScheduleImpl {
                 }
                 cursor = cursor.withTime(time)
             } else {
-                cursor = cursor.plusDays(1)
+                if (force) {
+                    cursor = cursor.plusDays(1)
+                }
             }
             var i = 0
             do {

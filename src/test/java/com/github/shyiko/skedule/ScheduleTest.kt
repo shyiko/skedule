@@ -7,9 +7,14 @@ import java.time.format.DateTimeFormatter
 
 class ScheduleTest {
 
-    private fun iterateOverSchedule(schedule: String, timestamp: ZonedDateTime, limit: Int = 3) =
-        Schedule.parse(schedule).iterate(timestamp).asSequence().take(limit)
-            .map { it.format(DateTimeFormatter.ISO_ZONED_DATE_TIME) }.toList()
+    private fun iterateOverSchedule(schedule: String, timestamp: ZonedDateTime, limit: Int = 3,
+            skipFirstIfSame: Boolean = true) =
+        Schedule.parse(schedule)
+            .iterate(timestamp)
+            .let { generateSequence({ if (skipFirstIfSame) it.next() else it.nextOrSame() }) { _ -> it.next() } }
+            .take(limit)
+            .map { it.format(DateTimeFormatter.ISO_ZONED_DATE_TIME) }
+            .toList()
 
     @Test
     fun testEvery12Hours() {
@@ -129,7 +134,7 @@ class ScheduleTest {
             iterateOverSchedule(
                 "2nd,third mon,wed,thu of march 17:00",
                 ZonedDateTime.parse("2007-12-03T10:15:30+02:00[Europe/Kiev]"),
-                7
+                limit = 7
             )
         ).isEqualTo(listOf(
             "2008-03-10T17:00:00+02:00[Europe/Kiev]",
@@ -148,7 +153,7 @@ class ScheduleTest {
             iterateOverSchedule(
                 "1st monday of sep,oct,nov 17:00",
                 ZonedDateTime.parse("2007-12-03T10:15:30+02:00[Europe/Kiev]"),
-                4
+                limit = 4
             )
         ).isEqualTo(listOf(
             "2008-09-01T17:00:00+03:00[Europe/Kiev]",
@@ -164,7 +169,7 @@ class ScheduleTest {
             iterateOverSchedule(
                 "1 of jan,april,july,oct 00:00",
                 ZonedDateTime.parse("2007-12-03T10:15:30+02:00[Europe/Kiev]"),
-                5
+                limit = 5
             )
         ).isEqualTo(listOf(
             "2008-01-01T00:00:00+02:00[Europe/Kiev]",
@@ -172,6 +177,36 @@ class ScheduleTest {
             "2008-07-01T00:00:00+03:00[Europe/Kiev]",
             "2008-10-01T00:00:00+03:00[Europe/Kiev]",
             "2009-01-01T00:00:00+02:00[Europe/Kiev]"
+        ))
+    }
+
+    @Test
+    fun testEveryHourSynchronizedSame() {
+        assertThat(
+            iterateOverSchedule(
+                "every 1 hours synchronized",
+                ZonedDateTime.parse("2017-07-09T21:59:14-07:00[America/Los_Angeles]"),
+                skipFirstIfSame = false
+            )
+        ).isEqualTo(listOf(
+            "2017-07-09T22:00:00-07:00[America/Los_Angeles]",
+            "2017-07-09T23:00:00-07:00[America/Los_Angeles]",
+            "2017-07-10T00:00:00-07:00[America/Los_Angeles]"
+        ))
+    }
+
+    @Test
+    fun testEveryHourMinuteTruncationSame() {
+        assertThat(
+            iterateOverSchedule(
+                "every 1 hours from 00:29 to 23:29",
+                ZonedDateTime.parse("2016-03-21T16:29:15.007Z"),
+                skipFirstIfSame = false
+            )
+        ).isEqualTo(listOf(
+            "2016-03-21T17:29:00Z",
+            "2016-03-21T18:29:00Z",
+            "2016-03-21T19:29:00Z"
         ))
     }
 
