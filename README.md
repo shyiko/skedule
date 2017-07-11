@@ -63,6 +63,11 @@ every monday 09:00
 1 of jan,april,july,oct 00:00
 ```
 
+Additionally:
+- `hour` can be used in place of `1 hours` (same goes for `1 minutes`)  
+(e.g. `every hour`, `every minute from 10:00 to 14:00`) (since [0.3.0](https://github.com/shyiko/skedule/blob/master/CHANGELOG.md#030---2017-07-10))
+- `-` can be used to join consequent days & months (e.g. `every mon-fri 09:00`, `1-7 of jun-aug 00:00`) (since [0.3.0](https://github.com/shyiko/skedule/blob/master/CHANGELOG.md#030---2017-07-10))
+
 #### (example) Scheduling using ScheduledThreadPoolExecutor
 
 ```java
