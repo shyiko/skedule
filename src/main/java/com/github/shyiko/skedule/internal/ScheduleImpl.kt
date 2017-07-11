@@ -39,11 +39,14 @@ internal object ScheduleImpl {
 
     // ("every"|ordinal) (days) ["of" (monthspec)] (time)
     private val ORDINAL0 = "\\d\\d?(?:st|nd|rd|th)?|[a-z]+"
-    private val ORDINAL = "(?:$ORDINAL0)(?:,(?:$ORDINAL0))*"
+    private val ORDINAL00 = "(?:$ORDINAL0)(?:-(?:$ORDINAL0))?"
+    private val ORDINAL = "(?:$ORDINAL00)(?:,(?:$ORDINAL00))*"
     private val DAY0 = "[a-z]+"
-    private val DAY = "(?:$DAY0)(?:,(?:$DAY0))*"
+    private val DAY00 = "$DAY0(?:-$DAY0)?"
+    private val DAY = "(?:$DAY00)(?:,(?:$DAY00))*"
     private val MONTH0 = "[a-z]+"
-    private val MONTH = "(?:$MONTH0)(?:,(?:$MONTH0))*"
+    private val MONTH00 = "$MONTH0(?:-$MONTH0)?"
+    private val MONTH = "(?:$MONTH00)(?:,(?:$MONTH00))*"
     private val SPECIFIC = Regex("(every|$ORDINAL)( $DAY)?(?: of ($MONTH))? ($TIME)")
 
     // alias for "every mon,tue,wed,thu,fri,sat,sun (time)"
@@ -93,11 +96,29 @@ internal object ScheduleImpl {
         ORDINAL_MAP[ordinal] ?: ordinal.replace(ORDINAL_SUFFIX, "").toIntOrNull()
             ?: throw InvalidScheduleException("\"$ordinal\" isn't ordinal")
 
+    private fun parseOrdinalRange(range: String, min: Int, max: Int): Set<Int> {
+        val (from, to) = range.split('-').map { parseOrdinal(it) }
+        return range(from, to, min, max)
+    }
+
     private fun parseDayOfWeek(weekDays: String) =
         DAY_OF_WEEK_MAP[weekDays] ?: throw InvalidScheduleException("\"$weekDays\" isn't a valid day-of-week")
 
+    private fun parseDayOfWeekRange(range: String): Set<DayOfWeek> {
+        val (from, to) = range.split('-').map { parseDayOfWeek(it) }
+        return range(from.value, to.value, 1, 7).mapTo(mutableSetOf<DayOfWeek>()) { DayOfWeek.of(it) }
+    }
+
     private fun parseMonth(month: String) =
         MONTH_MAP[month] ?: throw InvalidScheduleException("\"$month\" isn't a valid month")
+
+    private fun parseMonthRange(range: String): Set<Month> {
+        val (from, to) = range.split('-').map { parseMonth(it) }
+        return range(from.value, to.value, 1, 12).mapTo(mutableSetOf<Month>()) { Month.of(it) }
+    }
+
+    private fun range(from: Int, to: Int, min: Int, max: Int) =
+        if (from <= to) (from..to).toSet() else ((from..max) + (min..to)).toSet()
 
     @JvmStatic
     fun parse(schedule: String): Schedule {
@@ -136,13 +157,21 @@ internal object ScheduleImpl {
                 val (rawOrdinal, day, month, rawTime) = match.groupValues.tail()
                 TimeSchedule(
                     weekDayIndexesInAMonth = if (day == "" || rawOrdinal == "every") WEEK_ALL else
-                        rawOrdinal.split(',').map { parseOrdinal(it) }.toSet(),
+                        rawOrdinal.split(',').flatMapTo(mutableSetOf<Int>()) {
+                            if (it.contains('-')) parseOrdinalRange(it, 1, 5) else setOf(parseOrdinal(it))
+                        },
                     weekDays = if (day == "") DAY_OF_WEEK_ALL else
-                        EnumSet.copyOf(day.trim().split(',').map { parseDayOfWeek(it) }),
+                        EnumSet.copyOf(day.trim().split(',').flatMap {
+                            if (it.contains('-')) parseDayOfWeekRange(it) else setOf(parseDayOfWeek(it))
+                        }),
                     days = if (day != "") DAY_ALL else
-                        rawOrdinal.split(',').map { parseOrdinal(it) }.toSet(),
+                        rawOrdinal.split(',').flatMapTo(mutableSetOf<Int>()) {
+                            if (it.contains('-')) parseOrdinalRange(it, 1, 31) else setOf(parseOrdinal(it))
+                        },
                     months = if (month == "") MONTH_ALL else
-                        EnumSet.copyOf(month.split(',').map { parseMonth(it) }),
+                        EnumSet.copyOf(month.split(',').flatMap {
+                            if (it.contains('-')) parseMonthRange(it) else setOf(parseMonth(it))
+                        }),
                     time = parseTime(rawTime)
                 )
             }

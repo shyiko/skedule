@@ -2,6 +2,9 @@ package com.github.shyiko.skedule
 
 import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.Test
+import java.time.DayOfWeek
+import java.time.LocalTime
+import java.time.Month
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
@@ -236,6 +239,25 @@ class ScheduleTest {
             "2007-12-03T10:17:00+02:00[Europe/Kiev]",
             "2007-12-03T10:18:00+02:00[Europe/Kiev]"
         ))
+    }
+
+    @Test
+    fun testRangeAlias() {
+        assertThat(Schedule.parse("7-14,31-5 of apr-apr,april-june,dec-feb 12:00"))
+            .isEqualTo(
+                Schedule
+                    .at(LocalTime.NOON)
+                    .nth((1..5).toSet() + (7..14).toSet() + 31)
+                    .of(Month.APRIL, Month.MAY, Month.JUNE, Month.DECEMBER, Month.JANUARY, Month.FEBRUARY)
+            )
+        assertThat(Schedule.parse("2-4 sat-mon,wed-thu of april 12:00"))
+            .isEqualTo(
+                Schedule
+                    .at(LocalTime.NOON)
+                    .nth(2, 3, 4, DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY,
+                        DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
+                    .of(Month.APRIL)
+            )
     }
 
 }
