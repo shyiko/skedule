@@ -164,7 +164,7 @@ class ScheduleTest {
     }
 
     @Test
-    fun test1OfJanAprilJulyOct0000() {
+    fun test1stOfJanAprilJulyOct0000() {
         assertThat(
             iterateOverSchedule(
                 "1 of jan,april,july,oct 00:00",
@@ -207,6 +207,34 @@ class ScheduleTest {
             "2016-03-21T17:29:00Z",
             "2016-03-21T18:29:00Z",
             "2016-03-21T19:29:00Z"
+        ))
+    }
+
+    @Test
+    fun testHourAlias() {
+        assertThat(
+            iterateOverSchedule(
+                "every hour",
+                ZonedDateTime.parse("2007-12-03T10:15:30+02:00[Europe/Kiev]")
+            )
+        ).isEqualTo(listOf(
+            "2007-12-03T11:15:30+02:00[Europe/Kiev]",
+            "2007-12-03T12:15:30+02:00[Europe/Kiev]",
+            "2007-12-03T13:15:30+02:00[Europe/Kiev]"
+        ))
+    }
+
+    @Test
+    fun testMinuteAlias() {
+        assertThat(
+            iterateOverSchedule(
+                "every minute from 10:00 to 14:00",
+                ZonedDateTime.parse("2007-12-03T10:15:30+02:00[Europe/Kiev]")
+            )
+        ).isEqualTo(listOf(
+            "2007-12-03T10:16:00+02:00[Europe/Kiev]",
+            "2007-12-03T10:17:00+02:00[Europe/Kiev]",
+            "2007-12-03T10:18:00+02:00[Europe/Kiev]"
         ))
     }
 

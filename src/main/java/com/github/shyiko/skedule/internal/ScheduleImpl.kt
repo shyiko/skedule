@@ -100,18 +100,20 @@ internal object ScheduleImpl {
         MONTH_MAP[month] ?: throw InvalidScheduleException("\"$month\" isn't a valid month")
 
     @JvmStatic
-    fun parse(schedule: String): Schedule =
-        when {
-            schedule.startsWith("every day ") -> {
-                val match = EVERY_DAY.matchEntire(schedule) ?:
-                    throw InvalidScheduleException("\"$schedule\" isn't valid \"every day...\" expression")
+    fun parse(schedule: String): Schedule {
+        val exp = schedule.replaceFirst("every hour", "every 1 hours")
+            .replaceFirst("every minute", "every 1 minutes")
+        return when {
+            exp.startsWith("every day ") -> {
+                val match = EVERY_DAY.matchEntire(exp) ?:
+                    throw InvalidScheduleException("\"$exp\" isn't valid \"every day...\" expression")
                 val (rawTime) = match.groupValues.tail()
                 TimeSchedule(time = parseTime(rawTime))
             }
-            schedule.startsWith(EVERY_PREFIX) && schedule.length > EVERY_PREFIX.length &&
-                schedule[EVERY_PREFIX.length].isDigit() -> {
-                val match = EVERY.matchEntire(schedule) ?:
-                    throw InvalidScheduleException("\"$schedule\" isn't valid \"every ...\" expression")
+            exp.startsWith(EVERY_PREFIX) && exp.length > EVERY_PREFIX.length &&
+                exp[EVERY_PREFIX.length].isDigit() -> {
+                val match = EVERY.matchEntire(exp) ?:
+                    throw InvalidScheduleException("\"$exp\" isn't valid \"every ...\" expression")
                 val (rawLength, rawUnit, interval, start, end) = match.groupValues.tail()
                 val length = parseNumber(rawLength)
                 val unit = parseUnit(rawUnit)
@@ -129,8 +131,8 @@ internal object ScheduleImpl {
                 ))
             }
             else -> {
-                val match = SPECIFIC.matchEntire(schedule) ?:
-                    throw InvalidScheduleException("\"$schedule\" isn't valid \"(every|ordinal) ...\" expression")
+                val match = SPECIFIC.matchEntire(exp) ?:
+                    throw InvalidScheduleException("\"$exp\" isn't valid \"(every|ordinal) ...\" expression")
                 val (rawOrdinal, day, month, rawTime) = match.groupValues.tail()
                 TimeSchedule(
                     weekDayIndexesInAMonth = if (day == "" || rawOrdinal == "every") WEEK_ALL else
@@ -145,6 +147,7 @@ internal object ScheduleImpl {
                 )
             }
         }
+    }
 
     private fun <T>List<T>.tail() = this.subList(1, this.size)
 
