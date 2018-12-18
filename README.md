@@ -4,7 +4,7 @@ skedule
 
 <p align="center">
 <a href="https://travis-ci.org/shyiko/skedule"><img src="https://travis-ci.org/shyiko/skedule.svg?branch=master" alt="Build Status"></a>
-<a href="http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.shyiko.skedule%22%20AND%20a%3A%22skedule%22"><img src="http://img.shields.io/badge/maven_central-0.3.0-blue.svg?style=flat" alt="Maven Central"></a>
+<a href="http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.shyiko.skedule%22%20AND%20a%3A%22skedule%22"><img src="http://img.shields.io/badge/maven_central-0.4.0-blue.svg?style=flat" alt="Maven Central"></a>
 <a href="https://ktlint.github.io/"><img src="https://img.shields.io/badge/code%20style-%E2%9D%A4-FF4081.svg" alt="ktlint"></a>
 </p>
 
@@ -23,7 +23,7 @@ Features:
 <dependency>
   <groupId>com.github.shyiko.skedule</groupId>
   <artifactId>skedule</artifactId>
-  <version>0.3.0</version>
+  <version>0.4.0</version>
   <!-- omit classifier below if you plan to use this library in koltin -->
   <classifier>kalvanized</classifier>
 </dependency>
