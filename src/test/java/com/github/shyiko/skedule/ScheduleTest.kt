@@ -214,6 +214,21 @@ class ScheduleTest {
     }
 
     @Test
+    fun testEveryOfMonth() {
+        assertThat(
+            iterateOverSchedule(
+                "1st monday of month 09:00",
+                ZonedDateTime.parse("2018-01-01T00:00:00.007Z"),
+                skipFirstIfSame = false
+            )
+        ).isEqualTo(listOf(
+            "2018-01-01T09:00:00Z",
+            "2018-02-05T09:00:00Z",
+            "2018-03-05T09:00:00Z"
+        ))
+    }
+
+    @Test
     fun testHourAlias() {
         assertThat(
             iterateOverSchedule(

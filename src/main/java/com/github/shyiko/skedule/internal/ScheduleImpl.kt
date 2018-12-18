@@ -168,7 +168,7 @@ internal object ScheduleImpl {
                         rawOrdinal.split(',').flatMapTo(mutableSetOf<Int>()) {
                             if (it.contains('-')) parseOrdinalRange(it, 1, 31) else setOf(parseOrdinal(it))
                         },
-                    months = if (month == "") MONTH_ALL else
+                    months = if (month == "" || month == "month") MONTH_ALL else
                         EnumSet.copyOf(month.split(',').flatMap {
                             if (it.contains('-')) parseMonthRange(it) else setOf(parseMonth(it))
                         }),
