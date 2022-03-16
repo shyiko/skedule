@@ -290,7 +290,7 @@ internal object ScheduleImpl {
                 if (cursorTime < intervalTime.start) {
                     cursor = cursor.withTime(intervalTime.start)
                 } else
-                if (cursorTime.plusSeconds(stepInSeconds - overflow) > intervalTime.end) {
+                if (cursorTime.plusSeconds(stepInSeconds - overflow) > intervalTime.end || cursorTime.plusSeconds(stepInSeconds - overflow) < cursorTime) {
                     cursor = cursor.withTime(intervalTime.start).plusDays(1)
                 } else {
                     if (overflow != 0L) {
