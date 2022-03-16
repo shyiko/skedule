@@ -76,6 +76,20 @@ class ScheduleTest {
     }
 
     @Test
+    fun testEvery15MinutesFrom1015to1045() {
+        assertThat(
+            iterateOverSchedule(
+                "every 30 minutes from 10:15 to 10:45",
+                ZonedDateTime.parse("2007-12-03T23:45:00+02:00[Europe/Kiev]")
+            )
+        ).isEqualTo(listOf(
+            "2007-12-04T10:15:00+02:00[Europe/Kiev]",
+            "2007-12-04T10:45:00+02:00[Europe/Kiev]",
+            "2007-12-05T10:15:00+02:00[Europe/Kiev]"
+        ))
+    }
+
+    @Test
     fun testEvery3HoursFrom1000to1400OffsetBy2H() {
         assertThat(
             iterateOverSchedule(
